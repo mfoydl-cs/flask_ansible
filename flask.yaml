@@ -11,9 +11,11 @@
       with_items:
         - apache2
         - python
+        - libapache2-mod-wsgi
+        - python-dev
 
     - name: enabled mod_rewrite
-      apache2_module: name-rewrite state=present
+      apache2_module: name=rewrite state=present
       notify:
         - restart apache2
 
@@ -25,6 +27,31 @@
     - name: create virtual host file
       template: src=flaskhost.conf dest=/etc/apache2/sites-available/{{ domain }}.conf
 
+    - name: clone website
+      git: repo={{ git_repo }} dest=/var/wwww/{{ domain }} update=yes
+
+    - name: install virtenv
+      pip:
+        name: virtualenv
+
+    - name: create virtual env
+      command: virtualenv venv
+    
+    - name: enable virtual env
+      command: source venv/bin/activate
+
+    - name: install python packages in virtenv
+      pip:
+        name: {{ item }}
+        with_items:
+          - Flask
+
+    - name: deactivate virtual env
+      command: deactivate
+
+    - name: a2enmod wsgi
+      command: a2enmod wsgi  
+
     - name: a2ensite {{ domain }}
       command: a2ensite {{ domain }}
       args:
@@ -32,8 +59,7 @@
       notify:
         - restart apache2
 
-    - name: clone website
-      git: repo={{ git_repo }} dest=/var/wwww/{{ domain }} update=no
+    
 
   handlers:
    - name: restart apache2
