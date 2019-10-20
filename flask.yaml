@@ -51,6 +51,8 @@
     
    - name: disable default config file
      command: a2dissite /etc/apache2/sites-enabled/000-default.conf
+     notify:
+        - restart apache2
 
     
 
