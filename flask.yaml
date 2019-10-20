@@ -1,10 +1,12 @@
 ---
-- hosts: apache
+- hosts: 127.0.0.1
+  connection: local
   sudo: yes
   vars:
     http_port: 80
     domain: cowzilla
     git_repo: https://github.com/mfoydl-cs/356_final_project.git
+    repo_name: 356_final_project
   tasks:
     - name: install apache2
       apt: name={{ item }} update_cache=yes state=latest
@@ -13,6 +15,7 @@
         - python
         - libapache2-mod-wsgi
         - python-dev
+        - python-pip
 
     - name: enabled mod_rewrite
       apache2_module: name=rewrite state=present
@@ -25,29 +28,15 @@
         - restart apache2
 
     - name: create virtual host file
-      template: src=flaskhost.conf dest=/etc/apache2/sites-available/{{ domain }}.conf
+      template: src=flaskhost.conf dest=/etc/apache2/sites-available/{{ domain }}.conf  
 
     - name: clone website
       git: repo={{ git_repo }} dest=/var/wwww/{{ domain }} update=yes
 
-    - name: install virtenv
-      pip:
-        name: virtualenv
-
-    - name: create virtual env
-      command: virtualenv venv
-    
-    - name: enable virtual env
-      command: source venv/bin/activate
-
-    - name: install python packages in virtenv
-      pip:
-        name: {{ item }}
-        with_items:
-          - Flask
-
-    - name: deactivate virtual env
-      command: deactivate
+    - name: install python packages
+      pip: name={{ item }} state=present 
+      with_items:
+        - Flask
 
     - name: a2enmod wsgi
       command: a2enmod wsgi  
