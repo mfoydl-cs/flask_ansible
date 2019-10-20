@@ -48,6 +48,9 @@
         creates: /etc/apache2/sites-enabled/{{ domain }}.conf
       notify:
         - restart apache2
+    
+   - name: disable default config file
+     command: a2dissite /etc/apache2/sites-enabled/000-default.conf
 
     
 
