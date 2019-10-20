@@ -34,6 +34,9 @@
     - name: clone website
       git: repo={{ git_repo }} dest=/var/www/{{ repo_name }} update=yes
 
+    - name: fix wsgi filepath
+      lineinfile: dest=/var/www/{{ repo_name }}/Flask/flaskapp.wsgi regexp="^sys" line="sys.path.insert(0,'/var/www/{{ repo_name }}/Flask')" state=present
+
     - name: install python packages
       pip: name={{ item }} state=present 
       with_items:
@@ -50,7 +53,7 @@
         - restart apache2
     
     - name: disable default config file
-      command: a2dissite /etc/apache2/sites-enabled/000-default.conf
+      command: a2dissite 000-default.conf
       notify:
         - restart apache2
 
