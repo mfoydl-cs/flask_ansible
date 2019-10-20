@@ -32,7 +32,7 @@
       template: src=flaskhost.conf dest=/etc/apache2/sites-available/{{ domain }}.conf  
 
     - name: clone website
-      git: repo={{ git_repo }} dest=/var/www/{{ domain }} update=yes
+      git: repo={{ git_repo }} dest=/var/www/{{ repo_name }} update=yes
 
     - name: install python packages
       pip: name={{ item }} state=present 
