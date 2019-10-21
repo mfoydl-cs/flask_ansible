@@ -41,6 +41,9 @@
       pip: name={{ item }} state=present 
       with_items:
         - Flask
+	- pymongo
+	- flask_mail
+	- flask_jwt_extended
 
     - name: a2enmod wsgi
       command: a2enmod wsgi  
