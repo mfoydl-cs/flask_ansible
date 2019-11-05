@@ -9,14 +9,20 @@
     git_repo: https://github.com/mfoydl-cs/356_final_project.git
     repo_name: 356_final_project
   tasks:
+
     - name: get apt-transport-https
       command: apt-get install apt-transport-https
+
     - name: get es key
-      apt-key: 
+      apt_key: 
         url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
         state: present
+
     - name: add es respository
-      command: add-apt-repository "deb https://artifacts.elastic.co/packages/7.x/apt stable main"
+      apt_repository:
+        repo: 'deb https://artifacts.elastic.co/packages/7.x/apt stable main'
+        state: present
+        update_cache: yes
 
     - name: install packages
       apt: name={{ item }} update_cache=yes state=latest
@@ -30,21 +36,23 @@
         - mongodb
         - default-jdk
         - elasticsearch
-
-    - name: set JAVA_HOME
-      command: export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64"
+        - curl
 
     - name: write es config
       blockinfile:
-        path: /etc/elasticsearch/elasticsearch.yml
+        dest: /etc/elasticsearch/elasticsearch.yml
         block: |
           network.host: 'localhost'
           cluster.name: naft
           node.name: "myNode1"
     - name: enable es
       command: /bin/systemctl enable elasticsearch.service
+    
     - name: start es
       command: systemctl start elasticsearch.service
+
+    - name: create es index
+      command: curl -XPUT 'localhost:9200/posts?pretty'
 
     - name: enabled mod_rewrite
       apache2_module: name=rewrite state=present
