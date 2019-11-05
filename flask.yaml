@@ -9,6 +9,11 @@
     git_repo: https://github.com/mfoydl-cs/356_final_project.git
     repo_name: 356_final_project
   tasks:
+    - name: set up elasticsearch repo
+      command: apt-get install apt-transport-https
+      command: wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
+      command: add-apt-repository "deb https://artifacts.elastic.co/packages/7.x/apt stable main"
+
     - name: install packages
       apt: name={{ item }} update_cache=yes state=latest
       with_items:
@@ -19,6 +24,21 @@
         - python-pip
         - postfix
         - mongodb
+        - default-jdk
+        - elasticsearch
+        
+    - name: set JAVA_HOME
+      command: export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64"
+
+    - name: complete elastic search setup
+      blockinfile:
+        path: /etc/elasticsearch/elasticsearch.yml
+        block: |
+          network.host: 'localhost'
+          cluster.name: naft
+          node.name: "myNode1"
+      command: /bin/systemctl enable elasticsearch.service
+      command: systemctl start elasticsearch.service
 
     - name: enabled mod_rewrite
       apache2_module: name=rewrite state=present
@@ -46,6 +66,7 @@
         - pymongo
         - flask_mail
         - flask_jwt_extended
+        - elasticsearch
 
     - name: a2enmod wsgi
       command: a2enmod wsgi  
