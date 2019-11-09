@@ -1,0 +1,99 @@
+apt_repository: ---
+- hosts: 127.0.0.1
+  connection: local
+  become: yes
+  become_method: sudo
+  vars:
+    http_port: 80
+    domain: cowzilla
+    git_repo: https://github.com/mfoydl-cs/356_final_project.git
+    repo_name: 356_final_project
+  tasks:
+    - name: get apt-transport-https
+      command: apt-get install apt-transport-https
+    - name: get es key
+      apt_key: 
+        url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+        state: present
+
+    - name: add es respository
+      apt_repository:
+	repo: deb https://artifacts.elastic.co/packages/7.x/apt stable main
+	state: present
+
+    - name: install packages
+      apt: name={{ item }} update_cache=yes state=latest
+      with_items:
+        - apache2
+        - python
+        - libapache2-mod-wsgi
+        - python-dev
+        - python-pip
+        - postfix
+        - mongodb
+        - default-jdk
+        - elasticsearch
+
+    - name: set JAVA_HOME
+      command: export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64"
+
+    - name: write es config
+      blockinfile:
+        path: /etc/elasticsearch/elasticsearch.yml
+        block: |
+          network.host: 'localhost'
+          cluster.name: naft
+          node.name: "myNode1"
+    - name: enable es
+      command: /bin/systemctl enable elasticsearch.service
+    - name: start es
+      command: systemctl start elasticsearch.service
+
+    - name: enabled mod_rewrite
+      apache2_module: name=rewrite state=present
+      notify:
+        - restart apache2
+
+    - name: apache2 listen on port {{ http_port }}
+      lineinfile: dest=/etc/apache2/ports.conf regexp="^Listen " line="Listen {{ http_port }}" state=present
+      notify:
+        - restart apache2
+
+    - name: create virtual host file
+      template: src=flaskhost.conf dest=/etc/apache2/sites-available/{{ domain }}.conf  
+
+    - name: clone website
+      git: repo={{ git_repo }} dest=/var/www/{{ repo_name }} update=yes
+
+    - name: fix wsgi filepath
+      lineinfile: dest=/var/www/{{ repo_name }}/Flask/flaskapp.wsgi regexp="^sys" line="sys.path.insert(0,'/var/www/{{ repo_name }}/Flask')" state=present
+
+    - name: install python packages
+      pip: name={{ item }} state=present 
+      with_items:
+        - Flask
+        - pymongo
+        - flask_mail
+        - flask_jwt_extended
+        - elasticsearch
+
+    - name: a2enmod wsgi
+      command: a2enmod wsgi  
+
+    - name: a2ensite {{ domain }}
+      command: a2ensite {{ domain }}
+      args:
+        creates: /etc/apache2/sites-enabled/{{ domain }}.conf
+      notify:
+        - restart apache2
+    
+    - name: disable default config file
+      command: a2dissite 000-default.conf
+      notify:
+        - restart apache2
+
+    
+
+  handlers:
+   - name: restart apache2
+     service: name=apache2 state=restarted
