@@ -28,15 +28,17 @@
       apt: name={{ item }} update_cache=yes state=latest
       with_items:
         - apache2
-        - python
-        - libapache2-mod-wsgi
+        - python3
+        - libapache2-mod-wsgi-py3
         - python-dev
-        - python-pip
+        - python3-pip
         - postfix
         - mongodb
         - default-jdk
         - elasticsearch
         - curl
+        - memcached
+        - redis-server
 
     - name: write es config
       blockinfile:
@@ -81,6 +83,8 @@
         - flask_mail
         - flask_jwt_extended
         - elasticsearch
+        - celery
+        - redis
 
     - name: a2enmod wsgi
       command: a2enmod wsgi  
